@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  // GitHub Pages serves this from /<repo>/, not the domain root. Only applied in
-  // the Pages workflow so local dev and other hosts keep serving from '/'.
-  base: process.env.GITHUB_PAGES === 'true' ? '/designer-interview-platform/' : '/',
+  // GitHub Pages serves from /<repo>/ rather than the domain root. That base is
+  // passed by the `build:pages` script instead of being set here, so local dev
+  // and any other host keep serving from '/' with no extra config or types.
   server: { port: 5173 },
 })

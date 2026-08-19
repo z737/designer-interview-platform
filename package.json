@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:pages": "tsc -b && vite build --base=/designer-interview-platform/",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "verify:export": "tsx scripts/verify-export.ts"

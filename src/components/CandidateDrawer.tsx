@@ -13,6 +13,7 @@ type Props = {
   onClose: () => void
   onSubmit: (draft: EvaluationDraft) => Promise<void>
   onExportRound: (roundKey: string) => void
+  onEdit: () => void
 }
 
 export default function CandidateDrawer({
@@ -22,6 +23,7 @@ export default function CandidateDrawer({
   onClose,
   onSubmit,
   onExportRound,
+  onEdit,
 }: Props) {
   // Open on the round the candidate is actually on — that is what you are here to do.
   const [activeKey, setActiveKey] = useState(
@@ -70,9 +72,14 @@ export default function CandidateDrawer({
               <span className="chip chip--quiet">{statusLabel(candidate.status)}</span>
             </div>
           </div>
-          <button className="btn-icon" onClick={onClose} aria-label="Close">
-            ×
-          </button>
+          <div className="row gap-8">
+            <button type="button" className="btn-pill" onClick={onEdit}>
+              Edit details
+            </button>
+            <button className="btn-icon" onClick={onClose} aria-label="Close">
+              ×
+            </button>
+          </div>
         </header>
 
         <div className="drawer__body">

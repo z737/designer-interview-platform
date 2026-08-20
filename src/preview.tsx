@@ -52,7 +52,7 @@ function Preview() {
           </div>
           <span className="micro">5 of 5</span>
         </div>
-        <CandidateTable candidates={candidates} evaluations={evaluations} selectedId={selectedId} onSelect={(c) => setSelectedId(c.id)} onDelete={(c) => alert(`delete ${c.full_name} (preview)`)} onExportRound={(c, k) => alert(`export ${c.full_name} ${k} (preview)`)} />
+        <CandidateTable candidates={candidates} evaluations={evaluations} selectedId={selectedId} onSelect={(c) => setSelectedId(c.id)} onEdit={(c) => alert(`edit ${c.full_name} (preview)`)} onDelete={(c) => alert(`delete ${c.full_name} (preview)`)} onExportRound={(c, k) => alert(`export ${c.full_name} ${k} (preview)`)} />
       </main>
       {selected && (
         <CandidateDrawer
@@ -62,6 +62,7 @@ function Preview() {
           onClose={() => setSelectedId(null)}
           onSubmit={async () => { alert('submitted (preview)') }}
           onExportRound={(k) => alert(`export ${k} (preview)`)}
+          onEdit={() => alert('edit (preview)')}
         />
       )}
     </div>

@@ -24,6 +24,10 @@
   --soft-stone: #eeece7;
   --pale-green: #edfce9;
   --pale-blue: #f1f5ff;
+  --pale-red: #fdeceb;
+  --pale-orange: #fff1e6;
+  /* Darkened so 13px chip text clears 4.5:1 on its own tint. */
+  --orange-ink: #8a4b12;
 
   /* --- Text ----------------------------------------------------------- */
   --body-muted: #616161; /* readable secondary text — 6.0:1 on white */
@@ -473,13 +477,9 @@ a {
 .row-item__scores {
   display: flex;
   gap: 8px;
-  justify-content: flex-end;
   flex-wrap: wrap;
 }
 
-.rows__head .mono-label:last-child {
-  text-align: right;
-}
 
 /* --------------------------------------------------------------- chips */
 
@@ -506,6 +506,12 @@ a {
   border-color: var(--primary);
 }
 
+/*
+ * Status chips are a tinted background plus same-hue ink, rather than solid
+ * fills — solid saturated blocks would fight the restrained surface palette.
+ * Every pairing is checked to at least 4.5:1 for the 13px label:
+ * passed 11.6, rejected 6.3, on hold 6.1, in progress 5.0.
+ */
 .chip--positive {
   background: var(--pale-green);
   border-color: transparent;
@@ -513,20 +519,21 @@ a {
 }
 
 .chip--warning {
-  border-color: var(--coral);
-  color: #a03b26;
+  background: var(--pale-orange);
+  border-color: transparent;
+  color: var(--orange-ink);
 }
 
 .chip--negative {
+  background: var(--pale-red);
   border-color: transparent;
-  background: var(--soft-stone);
   color: var(--error);
 }
 
 .chip--quiet {
+  background: var(--pale-blue);
   border-color: transparent;
-  background: var(--soft-stone);
-  color: var(--body-muted);
+  color: var(--action-blue);
 }
 
 /* ------------------------------------------------------------ progress */
@@ -546,8 +553,30 @@ a {
   background: var(--deep-green);
 }
 
+/*
+ * The current round pulses so the eye lands on where each candidate actually
+ * is. 1.6s is well under the 3-flashes-per-second seizure threshold, and the
+ * animation is dropped entirely for reduced-motion users.
+ */
 .pip--current {
   background: var(--primary);
+  animation: pip-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pip-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pip--current {
+    animation: none;
+  }
 }
 
 .pip--blocked {
@@ -924,10 +953,6 @@ a {
     grid-template-columns: 1fr;
     gap: 12px;
     align-items: flex-start;
-  }
-
-  .row-item__scores {
-    justify-content: flex-start;
   }
 }
 

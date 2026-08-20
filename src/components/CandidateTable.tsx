@@ -9,6 +9,7 @@ type Props = {
   evaluations: Evaluation[]
   selectedId: string | null
   onSelect: (candidate: Candidate) => void
+  onEdit: (candidate: Candidate) => void
   onDelete: (candidate: Candidate) => void
   onExportRound: (candidate: Candidate, roundKey: string) => void
 }
@@ -22,6 +23,7 @@ export default function CandidateTable({
   evaluations,
   selectedId,
   onSelect,
+  onEdit,
   onDelete,
   onExportRound,
 }: Props) {
@@ -85,6 +87,10 @@ export default function CandidateTable({
             <RowMenu
               label={`Actions for ${c.full_name || c.email}`}
               items={[
+                {
+                  label: 'Edit details',
+                  onSelect: () => onEdit(c),
+                },
                 ...ROUNDS.map((r) => {
                   const scored = own.some((e) => e.round_key === r.key)
                   return {

@@ -38,29 +38,54 @@ export async function fetchQuestionBank(): Promise<BankQuestion[]> {
   return data as BankQuestion[]
 }
 
+/** Shared field mapping so add and edit cannot drift apart. */
+function candidateFields(input: NewCandidate) {
+  return {
+    full_name: input.full_name.trim(),
+    email: input.email.trim().toLowerCase(),
+    source: input.source?.trim() || null,
+    portfolio_url: input.portfolio_url?.trim() || null,
+  }
+}
+
+/** Email is the unique key, so a collision is the one error worth naming. */
+function candidateError(error: { code?: string }): Error | null {
+  if (error.code === '23505') return new Error('A candidate with that email already exists.')
+  if (error.code === '23514') return new Error('Full name cannot be blank.')
+  return null
+}
+
 export async function addCandidate(
   input: NewCandidate,
   addedBy: string,
 ): Promise<Candidate> {
   const { data, error } = await supabase
     .from('candidates')
-    .insert({
-      full_name: input.full_name.trim(),
-      email: input.email.trim().toLowerCase(),
-      source: input.source?.trim() || null,
-      portfolio_url: input.portfolio_url?.trim() || null,
-      created_by_name: addedBy.trim() || null,
-    })
+    .insert({ ...candidateFields(input), created_by_name: addedBy.trim() || null })
     .select()
     .single()
 
-  if (error) {
-    // 23505 = unique_violation. Tell the user which field collided.
-    if (error.code === '23505') {
-      throw new Error('A candidate with that email already exists.')
-    }
-    throw error
-  }
+  if (error) throw candidateError(error) ?? error
+  return data as Candidate
+}
+
+/**
+ * Edits basic details only. Round and status are driven by the pipeline, so they
+ * are deliberately not editable here — advancing happens by submitting a
+ * scorecard, not by hand.
+ */
+export async function updateCandidate(
+  candidateId: string,
+  input: NewCandidate,
+): Promise<Candidate> {
+  const { data, error } = await supabase
+    .from('candidates')
+    .update(candidateFields(input))
+    .eq('id', candidateId)
+    .select()
+    .single()
+
+  if (error) throw candidateError(error) ?? error
   return data as Candidate
 }
 

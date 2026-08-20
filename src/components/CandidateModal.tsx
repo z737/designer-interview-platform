@@ -1,14 +1,27 @@
 import { useEffect, useState } from 'react'
-import type { NewCandidate } from '../lib/types'
+import type { Candidate, NewCandidate } from '../lib/types'
 import { errorMessage } from '../lib/errors'
 
 type Props = {
+  /** Pass a candidate to edit their details; omit to add a new one. */
+  candidate?: Candidate | null
   onClose: () => void
-  onAdd: (candidate: NewCandidate) => Promise<void>
+  onSave: (candidate: NewCandidate) => Promise<void>
 }
 
-export default function AddCandidateModal({ onClose, onAdd }: Props) {
-  const [form, setForm] = useState<NewCandidate>({ full_name: '', email: '' })
+/**
+ * One modal for both adding and editing. The fields are identical, so the only
+ * differences are the prefill, the title and the submit label — splitting this
+ * into two components would duplicate the validation for no benefit.
+ */
+export default function CandidateModal({ candidate, onClose, onSave }: Props) {
+  const isEdit = !!candidate
+  const [form, setForm] = useState<NewCandidate>({
+    full_name: candidate?.full_name ?? '',
+    email: candidate?.email ?? '',
+    portfolio_url: candidate?.portfolio_url ?? '',
+    source: candidate?.source ?? '',
+  })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -33,10 +46,10 @@ export default function AddCandidateModal({ onClose, onAdd }: Props) {
     }
     setBusy(true)
     try {
-      await onAdd({ ...form, full_name: form.full_name.trim() })
+      await onSave({ ...form, full_name: form.full_name.trim() })
       onClose()
     } catch (err) {
-      setError(errorMessage(err, 'Could not add candidate.'))
+      setError(errorMessage(err, isEdit ? 'Could not save changes.' : 'Could not add candidate.'))
     } finally {
       setBusy(false)
     }
@@ -48,11 +61,11 @@ export default function AddCandidateModal({ onClose, onAdd }: Props) {
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Add candidate"
+      aria-label={isEdit ? 'Edit candidate' : 'Add candidate'}
     >
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="row gap-16">
-          <h2 className="heading-section flex-1">Add candidate</h2>
+          <h2 className="heading-section flex-1">{isEdit ? 'Edit candidate' : 'Add candidate'}</h2>
           <button className="btn-icon" onClick={onClose} aria-label="Close">
             ×
           </button>
@@ -130,7 +143,7 @@ export default function AddCandidateModal({ onClose, onAdd }: Props) {
               Cancel
             </button>
             <button type="submit" className="btn-primary" disabled={busy}>
-              {busy ? 'Adding…' : 'Add candidate'}
+              {busy ? 'Saving…' : isEdit ? 'Save changes' : 'Add candidate'}
             </button>
           </div>
         </form>

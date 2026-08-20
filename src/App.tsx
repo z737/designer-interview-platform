@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import CandidateTable from './components/CandidateTable'
-import AddCandidateModal from './components/AddCandidateModal'
+import CandidateModal from './components/CandidateModal'
 import CandidateDrawer from './components/CandidateDrawer'
 import { configError } from './lib/supabase'
 import {
   addCandidate,
   deleteCandidate,
+  updateCandidate,
   fetchCandidates,
   fetchEvaluations,
   fetchQuestionBank,
@@ -57,6 +58,7 @@ function Dashboard() {
   const [toast, setToast] = useState<string | null>(null)
 
   const [showAdd, setShowAdd] = useState(false)
+  const [editing, setEditing] = useState<Candidate | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
@@ -113,6 +115,13 @@ function Dashboard() {
     const created = await addCandidate(input, RECORDED_BY)
     setCandidates((prev) => [created, ...prev])
     setToast(`${created.full_name} added to round 1.`)
+  }
+
+  async function handleUpdate(input: NewCandidate) {
+    if (!editing) return
+    const saved = await updateCandidate(editing.id, input)
+    setCandidates((prev) => prev.map((c) => (c.id === saved.id ? saved : c)))
+    setToast(`${saved.full_name} updated.`)
   }
 
   const handleSubmitEvaluation = useCallback(
@@ -238,12 +247,21 @@ function Dashboard() {
           evaluations={evaluations}
           selectedId={selectedId}
           onSelect={(c) => setSelectedId(c.id)}
+          onEdit={setEditing}
           onDelete={handleDelete}
           onExportRound={(c, k) => void handleExportRound(c, k)}
         />
       </main>
 
-      {showAdd && <AddCandidateModal onClose={() => setShowAdd(false)} onAdd={handleAdd} />}
+      {showAdd && <CandidateModal onClose={() => setShowAdd(false)} onSave={handleAdd} />}
+
+      {editing && (
+        <CandidateModal
+          candidate={editing}
+          onClose={() => setEditing(null)}
+          onSave={handleUpdate}
+        />
+      )}
 
       {selected && (
         <CandidateDrawer
@@ -253,6 +271,7 @@ function Dashboard() {
           onClose={() => setSelectedId(null)}
           onSubmit={handleSubmitEvaluation}
           onExportRound={(roundKey) => void handleExportRound(selected, roundKey)}
+          onEdit={() => setEditing(selected)}
         />
       )}
 

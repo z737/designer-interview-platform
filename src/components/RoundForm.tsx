@@ -11,12 +11,12 @@ type Props = {
   round: Round
   candidateId: string
   questionBank: BankQuestion[]
-  /** This interviewer's existing scorecard for this round, if they already submitted. */
+  /** The submitted scorecard for this round, if there is one. */
   existing: Evaluation | null
   /** True when the candidate has not reached this round yet. */
-  locked: boolean
+  notYetReached: boolean
   onSubmit: (draft: EvaluationDraft) => Promise<void>
-  /** Available once this round has at least one submitted scorecard. */
+  /** Available once this round has a submitted scorecard. */
   onExportReport: () => void
 }
 
@@ -25,10 +25,17 @@ export default function RoundForm({
   candidateId,
   questionBank,
   existing,
-  locked,
+  notYetReached,
   onSubmit,
   onExportReport,
 }: Props) {
+  /**
+   * A submitted scorecard is a record, not a draft — it opens read-only so a
+   * stray click cannot silently alter someone's evaluation. "Edit scorecard"
+   * is the deliberate act that unlocks it.
+   */
+  const [editing, setEditing] = useState(!existing)
+
   const [criteria, setCriteria] = useState<Record<string, number>>(existing?.criteria_scores ?? {})
   const [notes, setNotes] = useState(existing?.notes ?? '')
   const [recommendation, setRecommendation] = useState<Recommendation | null>(
@@ -36,6 +43,8 @@ export default function RoundForm({
   )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const readOnly = !editing
 
   const bank = useMemo(
     () => questionBank.filter((q) => q.round_key === round.key),
@@ -48,11 +57,19 @@ export default function RoundForm({
 
   const canSubmit = complete && recommendation !== null && notes.trim().length > 0
 
-  // A report only makes sense once something has been submitted for this round.
-  const roundHasScorecard = !!existing
+  /** Discard edits and return to the stored record. */
+  function cancelEditing() {
+    setCriteria(existing?.criteria_scores ?? {})
+    setNotes(existing?.notes ?? '')
+    setRecommendation(existing?.recommendation ?? null)
+    setError(null)
+    setEditing(false)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // A locked card is a record; no code path should be able to re-save it.
+    if (readOnly) return
     if (!canSubmit || average === null || recommendation === null) return
     setError(null)
     setBusy(true)
@@ -67,6 +84,9 @@ export default function RoundForm({
         recommendation,
         interviewerName: RECORDED_BY,
       })
+      // On success the parent re-keys this form, which remounts it locked.
+      // Setting it here too keeps the state honest if that ever changes.
+      setEditing(false)
     } catch (err) {
       setError(errorMessage(err, 'Could not submit scorecard.'))
     } finally {
@@ -83,17 +103,23 @@ export default function RoundForm({
         {round.guidance && <p className="brief__guidance">{round.guidance}</p>}
       </div>
 
-      {locked && (
+      {notYetReached && (
         <div className="notice notice--warning mt-16">
           This candidate has not reached this round yet. You can still record a scorecard, but it
           will not move them forward until they are on this round.
         </div>
       )}
 
-      {existing && (
+      {existing && readOnly && (
         <div className="notice notice--info mt-16">
-          This round was scored on {new Date(existing.submitted_at).toLocaleString()}. Saving
-          again updates the scorecard in place.
+          Submitted {new Date(existing.submitted_at).toLocaleString()}. Choose{' '}
+          <strong>Edit scorecard</strong> to make changes.
+        </div>
+      )}
+
+      {existing && editing && (
+        <div className="notice notice--warning mt-16">
+          Editing a submitted scorecard. Save to overwrite it, or cancel to keep it as it was.
         </div>
       )}
 
@@ -170,6 +196,7 @@ export default function RoundForm({
             <ScoreScale
               label={c.label}
               value={criteria[c.key] ?? null}
+              disabled={readOnly}
               onChange={(v) =>
                 setCriteria((prev) => {
                   const next = { ...prev }
@@ -201,7 +228,7 @@ export default function RoundForm({
                   ? 'Score the criteria above'
                   : (SCORE_LABELS[Math.round(average)] ?? '')}
               </div>
-              {!complete && (
+              {!complete && editing && (
                 <div className="caption">
                   {total - scored} criteri{total - scored === 1 ? 'on' : 'a'} left to score.
                 </div>
@@ -211,7 +238,7 @@ export default function RoundForm({
 
           <div className="field">
             <label className="field__label" htmlFor={`notes-${round.key}`}>
-              Notes &amp; feedback <span className="req">*</span>
+              Notes &amp; feedback {editing && <span className="req">*</span>}
             </label>
             <textarea
               id={`notes-${round.key}`}
@@ -219,13 +246,16 @@ export default function RoundForm({
               style={{ minHeight: 176 }}
               placeholder="What you observed: strengths, gaps, and anything the next round should probe."
               value={notes}
+              // readOnly rather than disabled, so the text keeps full contrast
+              // and stays selectable for copying into a summary.
+              readOnly={readOnly}
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
 
           <div className="field">
             <span className="field__label">
-              Recommendation <span className="req">*</span>
+              Recommendation {editing && <span className="req">*</span>}
             </span>
             <div className="row gap-8 wrap">
               {RECOMMENDATIONS.map((r) => (
@@ -235,6 +265,7 @@ export default function RoundForm({
                   className="btn-pill"
                   title={r.help}
                   aria-pressed={recommendation === r.value}
+                  disabled={readOnly}
                   onClick={() => setRecommendation(r.value)}
                 >
                   {r.label}
@@ -245,26 +276,44 @@ export default function RoundForm({
 
           {error && <div className="notice notice--error">{error}</div>}
 
-          <div className="row gap-24 wrap">
-            <button type="submit" className="btn-primary" disabled={!canSubmit || busy}>
-              {busy ? 'Submitting…' : existing ? 'Update scorecard' : 'Submit & advance'}
-            </button>
-            {roundHasScorecard && (
+          {/*
+            Actions. The two branches carry distinct keys on purpose.
+            Without them React reconciles the two <button> elements as the same
+            node and merely mutates its attributes — including type="button" ->
+            type="submit". The browser then runs the click's default activation
+            against the mutated node and submits the form, so a single click on
+            "Edit scorecard" would unlock the card and immediately re-save it.
+          */}
+          {readOnly ? (
+            <div key="actions-locked" className="row gap-24 wrap">
+              <button type="button" className="btn-pill btn-pill--lg" onClick={() => setEditing(true)}>
+                Edit scorecard
+              </button>
               <button type="button" className="btn-text" onClick={onExportReport}>
                 Export report (PDF)
               </button>
-            )}
-            {!canSubmit && (
-              <span className="caption">
-                {!complete
-                  ? `Score all ${total} criteria — the overall score is calculated from them.`
-                  : 'Notes and a recommendation are required.'}
-              </span>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div key="actions-editing" className="row gap-24 wrap">
+              <button type="submit" className="btn-primary" disabled={!canSubmit || busy}>
+                {busy ? 'Saving…' : existing ? 'Save changes' : 'Submit & advance'}
+              </button>
+              {existing && (
+                <button type="button" className="btn-text" onClick={cancelEditing} disabled={busy}>
+                  Cancel
+                </button>
+              )}
+              {!canSubmit && (
+                <span className="caption">
+                  {!complete
+                    ? `Score all ${total} criteria — the overall score is calculated from them.`
+                    : 'Notes and a recommendation are required.'}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </section>
-
     </form>
   )
 }

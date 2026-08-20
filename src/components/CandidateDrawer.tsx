@@ -112,7 +112,7 @@ export default function CandidateDrawer({
             candidateId={candidate.id}
             questionBank={questionBank}
             existing={existing}
-            locked={active.number > candidate.current_round}
+            notYetReached={active.number > candidate.current_round}
             onSubmit={onSubmit}
             onExportReport={() => onExportRound(active.key)}
           />

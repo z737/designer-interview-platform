@@ -292,6 +292,18 @@ a {
   cursor: not-allowed;
 }
 
+/* Standalone secondary action — matches the primary pill's height so the two
+   read as peers when they swap places between locked and editing states. */
+.btn-pill--lg {
+  padding: 12px 24px;
+}
+
+/* The chosen recommendation must stay legible while the card is locked. */
+.btn-pill:disabled[aria-pressed='true'] {
+  opacity: 1;
+  cursor: default;
+}
+
 .btn-pill__count {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -397,6 +409,18 @@ a {
   resize: vertical;
   min-height: 96px;
   line-height: 1.5;
+}
+
+/* Read-only notes: no input affordance, but full-contrast, selectable text. */
+.textarea[readonly] {
+  background: var(--surface-readonly, #fafafa);
+  border-color: var(--border-light);
+  resize: none;
+  cursor: default;
+}
+
+.textarea[readonly]:focus {
+  border-color: var(--border-light);
 }
 
 .input--inline {
@@ -785,6 +809,31 @@ a {
 }
 
 .scale__btn[aria-pressed='true'] {
+  background: var(--primary);
+  color: #fff;
+}
+
+/*
+ * A locked scale still has to read as a score, so the chosen number keeps full
+ * contrast; only the unchosen options fade to signal there is nothing to click.
+ */
+.scale--locked {
+  border-color: var(--border-light);
+}
+
+.scale--locked .scale__btn {
+  cursor: default;
+  color: var(--muted);
+  border-left-color: var(--border-light);
+}
+
+.scale--locked .scale__btn:hover {
+  background: transparent;
+  color: var(--muted);
+}
+
+.scale--locked .scale__btn[aria-pressed='true'],
+.scale--locked .scale__btn[aria-pressed='true']:hover {
   background: var(--primary);
   color: #fff;
 }

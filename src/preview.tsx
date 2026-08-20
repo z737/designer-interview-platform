@@ -8,11 +8,11 @@ import type { BankQuestion, Candidate, Evaluation } from './lib/types'
 import './index.css'
 
 const candidates: Candidate[] = [
-  { id: 'c1', username: 'anita.r', email: 'anita@example.com', full_name: 'Anita Rao', role_title: 'Product Designer', source: 'Referral', portfolio_url: 'https://example.com', current_round: 2, status: 'in_progress', created_by_name: 'Abhijit', created_at: '2026-08-01T10:00:00Z', updated_at: '2026-08-10T10:00:00Z' },
-  { id: 'c2', username: 'dev.kumar', email: 'dev@example.com', full_name: 'Dev Kumar', role_title: 'Product Designer', source: 'LinkedIn', portfolio_url: null, current_round: 1, status: 'in_progress', created_by_name: 'Abhijit', created_at: '2026-08-03T10:00:00Z', updated_at: '2026-08-03T10:00:00Z' },
-  { id: 'c3', username: 'meera_s', email: 'meera@example.com', full_name: 'Meera Suresh', role_title: 'Product Designer', source: 'Careers page', portfolio_url: null, current_round: 2, status: 'passed', created_by_name: 'Abhijit', created_at: '2026-07-20T10:00:00Z', updated_at: '2026-08-12T10:00:00Z' },
-  { id: 'c4', username: 'rahul.j', email: 'rahul@example.com', full_name: 'Rahul Jain', role_title: 'Product Designer', source: null, portfolio_url: null, current_round: 1, status: 'rejected', created_by_name: 'Abhijit', created_at: '2026-07-28T10:00:00Z', updated_at: '2026-08-02T10:00:00Z' },
-  { id: 'c5', username: 'priya.n', email: 'priya@example.com', full_name: 'Priya Nair', role_title: 'Product Designer', source: 'Referral', portfolio_url: null, current_round: 2, status: 'on_hold', created_by_name: 'Abhijit', created_at: '2026-08-05T10:00:00Z', updated_at: '2026-08-14T10:00:00Z' },
+  { id: 'c1', email: 'anita@example.com', full_name: 'Anita Rao', role_title: 'Product Designer', source: 'Referral', portfolio_url: 'https://example.com', current_round: 2, status: 'in_progress', created_by_name: 'Abhijit', created_at: '2026-08-01T10:00:00Z', updated_at: '2026-08-10T10:00:00Z' },
+  { id: 'c2', email: 'dev@example.com', full_name: 'Dev Kumar', role_title: 'Product Designer', source: 'LinkedIn', portfolio_url: null, current_round: 1, status: 'in_progress', created_by_name: 'Abhijit', created_at: '2026-08-03T10:00:00Z', updated_at: '2026-08-03T10:00:00Z' },
+  { id: 'c3', email: 'meera@example.com', full_name: 'Meera Suresh', role_title: 'Product Designer', source: 'Careers page', portfolio_url: null, current_round: 2, status: 'passed', created_by_name: 'Abhijit', created_at: '2026-07-20T10:00:00Z', updated_at: '2026-08-12T10:00:00Z' },
+  { id: 'c4', email: 'rahul@example.com', full_name: 'Rahul Jain', role_title: 'Product Designer', source: null, portfolio_url: null, current_round: 1, status: 'rejected', created_by_name: 'Abhijit', created_at: '2026-07-28T10:00:00Z', updated_at: '2026-08-02T10:00:00Z' },
+  { id: 'c5', email: 'priya@example.com', full_name: 'Priya Nair', role_title: 'Product Designer', source: 'Referral', portfolio_url: null, current_round: 2, status: 'on_hold', created_by_name: 'Abhijit', created_at: '2026-08-05T10:00:00Z', updated_at: '2026-08-14T10:00:00Z' },
 ]
 
 const evaluations: Evaluation[] = [
@@ -33,41 +33,32 @@ const questionBank: BankQuestion[] = ROUNDS.flatMap((r) =>
 
 function Preview() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [interviewer, setInterviewer] = useState('Abhijit')
   const selected = candidates.find((c) => c.id === selectedId) ?? null
   return (
     <div className="app">
-      <header className="topbar">
-        <span className="wordmark">Product Designer Interviews</span>
-        <div className="topbar__spacer" />
-        <button className="btn-text btn-text--sm">Download repository</button>
-        <label className="mono-label">You</label>
-        <input className="input input--inline" style={{ width: 160 }} placeholder="Your name" value={interviewer} onChange={(e) => setInterviewer(e.target.value)} />
-      </header>
       <main className="page">
         <div className="page-head">
-          <h1 className="display flex-1">Pipeline</h1>
+          <h1 className="display flex-1">PD1 Candidates</h1>
           <button className="btn-primary">Add candidate</button>
         </div>
         <div className="row gap-16 wrap mb-24">
-          <input className="input input--inline" style={{ maxWidth: 260 }} placeholder="Search name, username, or email…" />
+          <input className="input input--inline" style={{ maxWidth: 260 }} placeholder="Search name or email…" />
           <div className="row gap-8 wrap flex-1">
             <button className="btn-pill" aria-pressed={true}>All<span className="btn-pill__count">5</span></button>
             <button className="btn-pill">Active<span className="btn-pill__count">3</span></button>
-            <button className="btn-pill">Portfolio<span className="btn-pill__count">1</span></button>
+            <button className="btn-pill">Role Fitment<span className="btn-pill__count">1</span></button>
             <button className="btn-pill">Whiteboard<span className="btn-pill__count">3</span></button>
             <button className="btn-pill">Closed<span className="btn-pill__count">1</span></button>
           </div>
           <span className="micro">5 of 5</span>
         </div>
-        <CandidateTable candidates={candidates} evaluations={evaluations} selectedId={selectedId} onSelect={(c) => setSelectedId(c.id)} onDelete={(c) => alert(`delete ${c.username} (preview)`)} onExportRound={(c, k) => alert(`export ${c.username} ${k} (preview)`)} />
+        <CandidateTable candidates={candidates} evaluations={evaluations} selectedId={selectedId} onSelect={(c) => setSelectedId(c.id)} onDelete={(c) => alert(`delete ${c.full_name} (preview)`)} onExportRound={(c, k) => alert(`export ${c.full_name} ${k} (preview)`)} />
       </main>
       {selected && (
         <CandidateDrawer
           candidate={selected}
           evaluations={evaluations.filter((e) => e.candidate_id === selected.id)}
           questionBank={questionBank}
-          interviewerName={interviewer}
           onClose={() => setSelectedId(null)}
           onSubmit={async () => { alert('submitted (preview)') }}
           onExportRound={(k) => alert(`export ${k} (preview)`)}

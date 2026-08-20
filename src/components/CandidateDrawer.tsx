@@ -4,13 +4,12 @@ import { ROUNDS } from '../config/rounds'
 import { statusLabel } from '../lib/exportRepo'
 import type { BankQuestion, Candidate, Evaluation } from '../lib/types'
 import type { EvaluationDraft } from '../lib/api'
+import { RECORDED_BY } from '../config/app'
 
 type Props = {
   candidate: Candidate
   evaluations: Evaluation[]
   questionBank: BankQuestion[]
-  /** Self-declared name from the top bar; identifies which scorecard is yours. */
-  interviewerName: string
   onClose: () => void
   onSubmit: (draft: EvaluationDraft) => Promise<void>
   onExportRound: (roundKey: string) => void
@@ -20,7 +19,6 @@ export default function CandidateDrawer({
   candidate,
   evaluations,
   questionBank,
-  interviewerName,
   onClose,
   onSubmit,
   onExportRound,
@@ -39,22 +37,23 @@ export default function CandidateDrawer({
   }, [onClose])
 
   const active = ROUNDS.find((r) => r.key === activeKey) ?? ROUNDS[0]
-  const roundEvals = evaluations.filter((e) => e.round_key === active.key)
-  // Matched case-insensitively, the same way the unique index does.
-  const me = interviewerName.trim().toLowerCase()
-  const isMine = (e: (typeof roundEvals)[number]) =>
-    me.length > 0 && e.interviewer_name.trim().toLowerCase() === me
-  const mine = roundEvals.find(isMine) ?? null
-  const others = roundEvals.filter((e) => !isMine(e))
+  // One scorecard per candidate per round now that everything is recorded under
+  // a single name. Matched case-insensitively, as the unique index does.
+  const existing =
+    evaluations.find(
+      (e) =>
+        e.round_key === active.key &&
+        e.interviewer_name.trim().toLowerCase() === RECORDED_BY.toLowerCase(),
+    ) ?? null
 
   return (
     <div className="overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Candidate">
       <div className="drawer" onClick={(e) => e.stopPropagation()}>
         <header className="drawer__head">
           <div className="flex-1">
-            <h2 className="heading-section">{candidate.full_name || candidate.username}</h2>
+            <h2 className="heading-section">{candidate.full_name || candidate.email}</h2>
             <p className="caption mt-8">
-              {candidate.username} · {candidate.email}
+              {candidate.email}
               {candidate.portfolio_url && (
                 <>
                   {' · '}
@@ -101,13 +100,11 @@ export default function CandidateDrawer({
           <RoundForm
             // Remount when the round or this interviewer's saved scorecard changes,
             // so the form fields reset from the right source of truth.
-            key={`${active.key}:${mine?.id ?? 'new'}:${mine?.submitted_at ?? ''}`}
+            key={`${active.key}:${existing?.id ?? 'new'}:${existing?.submitted_at ?? ''}`}
             round={active}
             candidateId={candidate.id}
             questionBank={questionBank}
-            existing={mine}
-            others={others}
-            interviewerName={interviewerName}
+            existing={existing}
             locked={active.number > candidate.current_round}
             onSubmit={onSubmit}
             onExportReport={() => onExportRound(active.key)}

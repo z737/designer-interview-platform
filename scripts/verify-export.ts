@@ -12,7 +12,6 @@ import type { BankQuestion, Candidate, Evaluation } from '../src/lib/types'
 const candidates: Candidate[] = [
   {
     id: 'c1',
-    username: 'anita.r',
     email: 'anita@example.com',
     full_name: 'Anita Rao',
     role_title: 'Product Designer',
@@ -26,9 +25,8 @@ const candidates: Candidate[] = [
   },
   {
     id: 'c2',
-    username: '=cmd|calc',
     email: 'inject@example.com',
-    full_name: null,
+    full_name: '=cmd|calc',
     role_title: 'Product Designer',
     source: null,
     portfolio_url: null,

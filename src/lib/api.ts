@@ -45,9 +45,8 @@ export async function addCandidate(
   const { data, error } = await supabase
     .from('candidates')
     .insert({
-      username: input.username.trim(),
+      full_name: input.full_name.trim(),
       email: input.email.trim().toLowerCase(),
-      full_name: input.full_name?.trim() || null,
       source: input.source?.trim() || null,
       portfolio_url: input.portfolio_url?.trim() || null,
       created_by_name: addedBy.trim() || null,
@@ -58,11 +57,7 @@ export async function addCandidate(
   if (error) {
     // 23505 = unique_violation. Tell the user which field collided.
     if (error.code === '23505') {
-      throw new Error(
-        error.message.includes('email')
-          ? 'A candidate with that email already exists.'
-          : 'A candidate with that username already exists.',
-      )
+      throw new Error('A candidate with that email already exists.')
     }
     throw error
   }

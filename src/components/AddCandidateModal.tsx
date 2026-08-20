@@ -8,7 +8,7 @@ type Props = {
 }
 
 export default function AddCandidateModal({ onClose, onAdd }: Props) {
-  const [form, setForm] = useState<NewCandidate>({ username: '', email: '' })
+  const [form, setForm] = useState<NewCandidate>({ full_name: '', email: '' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -27,9 +27,13 @@ export default function AddCandidateModal({ onClose, onAdd }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    if (!form.full_name.trim()) {
+      setError('Full name is required.')
+      return
+    }
     setBusy(true)
     try {
-      await onAdd(form)
+      await onAdd({ ...form, full_name: form.full_name.trim() })
       onClose()
     } catch (err) {
       setError(errorMessage(err, 'Could not add candidate.'))
@@ -59,17 +63,17 @@ export default function AddCandidateModal({ onClose, onAdd }: Props) {
 
           <div className="grid-2">
             <div className="field">
-              <label className="field__label" htmlFor="c-username">
-                Username <span className="req">*</span>
+              <label className="field__label" htmlFor="c-name">
+                Full name <span className="req">*</span>
               </label>
               <input
-                id="c-username"
+                id="c-name"
                 className="input"
                 required
                 autoFocus
-                placeholder="anita.r"
-                value={form.username}
-                onChange={(e) => set('username', e.target.value)}
+                placeholder="Anita Rao"
+                value={form.full_name}
+                onChange={(e) => set('full_name', e.target.value)}
               />
             </div>
             <div className="field">
@@ -86,19 +90,6 @@ export default function AddCandidateModal({ onClose, onAdd }: Props) {
                 onChange={(e) => set('email', e.target.value)}
               />
             </div>
-          </div>
-
-          <div className="field">
-            <label className="field__label" htmlFor="c-name">
-              Full name
-            </label>
-            <input
-              id="c-name"
-              className="input"
-              placeholder="Anita Rao"
-              value={form.full_name ?? ''}
-              onChange={(e) => set('full_name', e.target.value)}
-            />
           </div>
 
           <div className="grid-2">

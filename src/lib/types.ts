@@ -9,9 +9,8 @@ export type Recommendation = 'advance' | 'hold' | 'reject'
 
 export type Candidate = {
   id: string
-  username: string
   email: string
-  full_name: string | null
+  full_name: string
   role_title: string
   source: string | null
   portfolio_url: string | null
@@ -55,9 +54,8 @@ export type BankQuestion = {
 }
 
 export type NewCandidate = {
-  username: string
+  full_name: string
   email: string
-  full_name?: string
   source?: string
   portfolio_url?: string
 }

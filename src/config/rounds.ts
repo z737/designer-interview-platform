@@ -1,16 +1,15 @@
 /**
  * The interview pipeline, in one place.
  *
- * Criteria and objectives are taken verbatim in spirit from "Product Designer
- * Interview Process and Evaluation Guide". To add the guide's Round 3 (Final
- * Discussion), append an entry to ROUNDS and seed its questions with a new
- * migration using the same `key` — nothing else in the app needs to change.
+ * Content mirrors "Product Designer Interview Process and Evaluation Guide".
+ * Criterion `key` values are stored in `evaluations.criteria_scores`, so renaming
+ * one orphans existing scores — add a migration if you ever need to.
  */
 
 export type Criterion = {
   key: string
   label: string
-  /** Shown as the hint under the criterion while scoring. */
+  /** The guide's definition of the criterion, shown while scoring. */
   help: string
 }
 
@@ -22,22 +21,24 @@ export type Round = {
   shortTitle: string
   interviewers: string
   objective: string
-  /** Guidance the interviewer sees before they start scoring. */
+  /** Framing the guide adds beyond the objective. */
   guidance?: string
   criteria: Criterion[]
+  /** "Additional signals" — softer things to watch for. */
+  signals?: string[]
+  /** "What we should not evaluate heavily". */
+  notEvaluated?: string[]
 }
 
 export const ROUNDS: Round[] = [
   {
     key: 'portfolio',
     number: 1,
-    title: 'Portfolio / Case-Study Review',
-    shortTitle: 'Portfolio',
-    interviewers: 'Abhijit and Harshita',
+    title: 'Role Fitment and Past Experience',
+    shortTitle: 'Role Fitment',
+    interviewers: 'Abhijith and Harshita',
     objective:
       "Understand the candidate's previous work, level of ownership, design ability, and relevance to the role.",
-    guidance:
-      'Judge demonstrated experience, not presentation polish. Push for what they personally owned.',
     criteria: [
       {
         key: 'problem_understanding',
@@ -82,7 +83,7 @@ export const ROUNDS: Round[] = [
       {
         key: 'ai_workflows',
         label: 'AI workflows',
-        help: 'How do they use AI for research, exploration, prototyping, audits, or other parts of their process?',
+        help: 'How do they use AI for research, exploration, prototyping, audits, or other parts of their design process?',
       },
       {
         key: 'self_awareness',
@@ -96,62 +97,76 @@ export const ROUNDS: Round[] = [
     number: 2,
     title: 'Online Whiteboarding',
     shortTitle: 'Whiteboard',
-    interviewers: 'One PM + one designer (Abhijit, Harshita, Mayank, or Harshit)',
+    interviewers: 'One PM + one designer from Abhijith, Harshita, Mayank, or Harshit',
     objective:
-      'Understand how the candidate approaches an unfamiliar and ambiguous product problem without a prepared solution.',
+      'Understand how the candidate approaches an unfamiliar and ambiguous product problem in real time.',
     guidance:
-      'The quality of the final wireframe is less important than the thinking process.',
+      'We are evaluating their design process, decision-making, and collaboration, not the polish of the final screens.',
     criteria: [
       {
         key: 'problem_framing',
         label: 'Problem framing',
-        help: 'Do they understand the problem before jumping into solutions?',
+        help: 'Do they understand and narrow down the problem before jumping into solutions?',
       },
       {
-        key: 'clarifying_questions',
-        label: 'Clarifying questions',
-        help: 'Do they ask about users, goals, constraints, context, and business objectives?',
+        key: 'context_gathering',
+        label: 'Context gathering',
+        help: 'Do they ask useful questions about the goal, success metrics, platform, scope, constraints, and business requirements?',
       },
       {
-        key: 'assumptions',
-        label: 'Assumptions',
-        help: 'Can they identify what they know versus what they are assuming?',
+        key: 'user_understanding',
+        label: 'User understanding',
+        help: 'Do they identify the right users and focus on behaviours, needs, and use cases relevant to the problem instead of making generic assumptions?',
+      },
+      {
+        key: 'handling_ambiguity',
+        label: 'Ability to handle ambiguity',
+        help: 'Can they make reasonable assumptions, communicate them clearly, and continue making progress when complete information is unavailable?',
       },
       {
         key: 'prioritization',
         label: 'Prioritization',
-        help: 'Can they focus on the most important problem instead of trying to solve everything?',
+        help: 'Can they reduce a broad problem into a focused and achievable scope within the available time?',
       },
       {
-        key: 'user_journey',
-        label: 'User journey',
-        help: 'Can they think through the complete experience, not just individual screens?',
+        key: 'user_flow_thinking',
+        label: 'User flow thinking',
+        help: 'Can they define a logical end-to-end flow before designing individual screens?',
       },
       {
-        key: 'information_architecture',
-        label: 'Information architecture',
-        help: 'Can they organize complex information clearly?',
+        key: 'solution_reasoning',
+        label: 'Solution reasoning',
+        help: 'Can they connect their design decisions back to the user needs, product goals, and constraints identified earlier?',
       },
       {
         key: 'tradeoffs',
-        label: 'Tradeoffs',
-        help: 'Can they explain why they chose one approach over another?',
+        label: 'Tradeoffs and decision-making',
+        help: 'Can they compare options, make decisions confidently, and explain what they are prioritizing or sacrificing?',
       },
       {
-        key: 'edge_cases',
-        label: 'Edge cases',
-        help: 'Do they consider errors, empty states, failures, different user types, and scale?',
+        key: 'communication_collaboration',
+        label: 'Communication and collaboration',
+        help: 'Do they explain their thinking clearly, involve the interviewers in the process, ask for feedback, and respond well when new information is introduced?',
       },
       {
-        key: 'collaboration',
-        label: 'Collaboration',
-        help: 'Do they engage with the PM and designer as partners during the exercise?',
+        key: 'reflection_next_steps',
+        label: 'Reflection and next steps',
+        help: 'Can they summarize their solution, identify weaknesses, explain what they would improve with more time, and describe how they would validate the solution?',
       },
-      {
-        key: 'communication',
-        label: 'Communication',
-        help: 'Can they clearly explain their thinking while working through the problem?',
-      },
+    ],
+    signals: [
+      'Manages their time without getting stuck on one part of the problem.',
+      'Prioritizes clarity over polished UI.',
+      'Remains flexible when assumptions or constraints change.',
+      'Focuses on key screens rather than trying to design the entire product.',
+      'Keeps referring back to the original user and business goals.',
+    ],
+    notEvaluated: [
+      'Pixel-perfect UI',
+      'Visual polish',
+      'Figma speed',
+      'Completing every screen',
+      'Finding one "correct" solution',
     ],
   },
 ]

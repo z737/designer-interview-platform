@@ -62,11 +62,12 @@ export async function buildRepoZip(input: ExportInput): Promise<{ blob: Blob; fi
   )
 
   // --- Per-candidate files ------------------------------------------------
-  // Usernames are unique in the DB, but slugging can collide ("anita.r" and
-  // "anita_r" both become "anita-r"), which would silently overwrite a folder.
+  // Names are not unique and slugging collapses more of them still ("Anita Rao"
+  // and "anita rao" both become "anita-rao"), which would silently overwrite a
+  // folder. Emails are unique, but make poor directory names.
   const usedDirs = new Map<string, number>()
   for (const candidate of candidates) {
-    const base = slug(candidate.username)
+    const base = slug(candidate.full_name)
     const seen = usedDirs.get(base) ?? 0
     usedDirs.set(base, seen + 1)
     const dir = `candidates/${seen === 0 ? base : `${base}-${seen + 1}`}`
@@ -125,7 +126,7 @@ function repoReadme(args: {
     '',
     '```',
     'rounds/                  Round definitions, criteria, and the full question bank',
-    'candidates/<username>/   One folder per candidate: summary, raw JSON, per-round notes',
+    'candidates/<name>/       One folder per candidate: summary, raw JSON, per-round notes',
     'data/                    CSV + JSON for spreadsheets and analysis',
     '```',
     '',
@@ -176,9 +177,8 @@ function roundDoc(round: (typeof ROUNDS)[number], bank: BankQuestion[]): string 
 
 function candidateSummary(candidate: Candidate, evals: Evaluation[]): string {
   const lines = [
-    `# ${candidate.full_name || candidate.username}`,
+    `# ${candidate.full_name}`,
     '',
-    `- **Username:** ${candidate.username}`,
     `- **Email:** ${candidate.email}`,
     `- **Role:** ${candidate.role_title}`,
     `- **Current round:** ${currentRoundLabel(candidate)}`,
@@ -213,7 +213,7 @@ function candidateRoundDoc(
 ): string {
   const round = roundByKey(roundKey)
   const lines = [
-    `# ${candidate.full_name || candidate.username} — Round ${round?.number ?? '?'}: ${round?.title ?? roundKey}`,
+    `# ${candidate.full_name} — Round ${round?.number ?? '?'}: ${round?.title ?? roundKey}`,
     '',
   ]
 
@@ -270,9 +270,8 @@ function toCsv(headers: string[], rows: unknown[][]): string {
 
 function candidatesCsv(candidates: Candidate[]): string {
   return toCsv(
-    ['username', 'full_name', 'email', 'role_title', 'current_round', 'current_round_title', 'status', 'source', 'portfolio_url', 'created_at'],
+    ['full_name', 'email', 'role_title', 'current_round', 'current_round_title', 'status', 'source', 'portfolio_url', 'created_at'],
     candidates.map((c) => [
-      c.username,
       c.full_name,
       c.email,
       c.role_title,

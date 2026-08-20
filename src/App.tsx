@@ -12,10 +12,9 @@ import {
   submitEvaluation,
   type EvaluationDraft,
 } from './lib/api'
-import { buildRepoZip } from './lib/exportRepo'
 import { buildRoundReport, downloadBlob } from './lib/reportPdf'
 import { roundByKey } from './config/rounds'
-import { useInterviewer } from './lib/useInterviewer'
+import { RECORDED_BY } from './config/app'
 import { errorMessage } from './lib/errors'
 import { ROUNDS } from './config/rounds'
 import type { BankQuestion, Candidate, Evaluation, NewCandidate } from './lib/types'
@@ -50,8 +49,6 @@ export default function App() {
 }
 
 function Dashboard() {
-  const { name: interviewer, setName: setInterviewer } = useInterviewer()
-
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [evaluations, setEvaluations] = useState<Evaluation[]>([])
   const [questionBank, setQuestionBank] = useState<BankQuestion[]>([])
@@ -63,7 +60,6 @@ function Dashboard() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
-  const [exporting, setExporting] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -104,7 +100,7 @@ function Dashboard() {
     const q = query.trim().toLowerCase()
     if (!q) return candidates
     return candidates.filter((c) =>
-      `${c.username} ${c.email} ${c.full_name ?? ''}`.toLowerCase().includes(q),
+      `${c.email} ${c.full_name}`.toLowerCase().includes(q),
     )
   }, [candidates, query])
 
@@ -114,9 +110,9 @@ function Dashboard() {
   )
 
   async function handleAdd(input: NewCandidate) {
-    const created = await addCandidate(input, interviewer)
+    const created = await addCandidate(input, RECORDED_BY)
     setCandidates((prev) => [created, ...prev])
-    setToast(`${created.username} added to round 1.`)
+    setToast(`${created.full_name} added to round 1.`)
   }
 
   const handleSubmitEvaluation = useCallback(
@@ -133,9 +129,9 @@ function Dashboard() {
         updated.current_round !== candidate.current_round ? updated.current_round : null
       setToast(
         draft.recommendation === 'reject'
-          ? `${candidate.username} marked as not proceeding.`
+          ? `${candidate.full_name} marked as not proceeding.`
           : movedTo
-            ? `Saved. ${candidate.username} moved to round ${movedTo}.`
+            ? `Saved. ${candidate.full_name} moved to round ${movedTo}.`
             : 'Scorecard saved.',
       )
     },
@@ -143,7 +139,7 @@ function Dashboard() {
   )
 
   async function handleDelete(candidate: Candidate) {
-    const label = candidate.full_name || candidate.username
+    const label = candidate.full_name
     const scorecards = evaluations.filter((e) => e.candidate_id === candidate.id).length
     const warning =
       scorecards > 0
@@ -187,31 +183,6 @@ function Dashboard() {
     }
   }
 
-  async function handleExport() {
-    setExporting(true)
-    setError(null)
-    try {
-      const { blob, filename } = await buildRepoZip({
-        candidates,
-        evaluations,
-        questionBank,
-        exportedBy: interviewer.trim() || 'unattributed',
-        now: new Date(),
-      })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = filename
-      a.click()
-      URL.revokeObjectURL(url)
-      setToast(`Downloaded ${filename}`)
-    } catch (err) {
-      setError(errorMessage(err, 'Export failed.'))
-    } finally {
-      setExporting(false)
-    }
-  }
-
   const filterDefs: { value: Filter; label: string }[] = [
     { value: 'all', label: 'All' },
     { value: 'active', label: 'Active' },
@@ -225,33 +196,10 @@ function Dashboard() {
 
   return (
     <div className="app">
-      <header className="topbar">
-        <span className="wordmark">Product Designer Interviews</span>
-        <span className="topbar__spacer" />
-        <button
-          className="btn-text btn-text--sm"
-          onClick={() => void handleExport()}
-          disabled={exporting || candidates.length === 0}
-        >
-          {exporting ? 'Packaging…' : 'Download repository'}
-        </button>
-        <label className="mono-label" htmlFor="interviewer-name">
-          You
-        </label>
-        <input
-          id="interviewer-name"
-          className="input input--inline"
-          style={{ width: 160 }}
-          placeholder="Your name"
-          value={interviewer}
-          onChange={(e) => setInterviewer(e.target.value)}
-          title="Attributes your scorecards. Stored in this browser only."
-        />
-      </header>
 
       <main className="page">
         <div className="page-head">
-          <h1 className="display flex-1">Pipeline</h1>
+          <h1 className="display flex-1">PD1 Candidates</h1>
           <button className="btn-primary" onClick={() => setShowAdd(true)}>
             Add candidate
           </button>
@@ -259,17 +207,11 @@ function Dashboard() {
 
         {error && <div className="notice notice--error mb-24">{error}</div>}
 
-        {!interviewer.trim() && !loading && candidates.length > 0 && (
-          <div className="notice notice--warning mb-24">
-            Add your name in the top bar so your scorecards are attributable.
-          </div>
-        )}
-
         <div className="row gap-16 wrap mb-24">
           <input
             className="input input--inline"
             style={{ maxWidth: 260 }}
-            placeholder="Search name, username, or email…"
+            placeholder="Search name or email…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -299,12 +241,6 @@ function Dashboard() {
           onDelete={handleDelete}
           onExportRound={(c, k) => void handleExportRound(c, k)}
         />
-
-        <p className="micro mt-32" style={{ maxWidth: '68ch' }}>
-          Confidential — candidate records are personal data under the DPDP Act. This app has no
-          sign-in, so keep it on localhost or behind your VPN, and delete exports once the hiring
-          decision is closed.
-        </p>
       </main>
 
       {showAdd && <AddCandidateModal onClose={() => setShowAdd(false)} onAdd={handleAdd} />}
@@ -314,7 +250,6 @@ function Dashboard() {
           candidate={selected}
           evaluations={evaluations.filter((e) => e.candidate_id === selected.id)}
           questionBank={questionBank}
-          interviewerName={interviewer}
           onClose={() => setSelectedId(null)}
           onSubmit={handleSubmitEvaluation}
           onExportRound={(roundKey) => void handleExportRound(selected, roundKey)}

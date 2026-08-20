@@ -30,7 +30,7 @@ export default function CandidateTable({
       <div className="rows">
         <div className="empty">
           <h3 className="empty__title">No candidates yet</h3>
-          <p className="empty__body">Add one by username and email to start the pipeline.</p>
+          <p className="empty__body">Add one by name and email to start the pipeline.</p>
         </div>
       </div>
     )
@@ -64,10 +64,9 @@ export default function CandidateTable({
             }}
           >
             <span>
-              <span className="row-item__name">{c.full_name || c.username}</span>
-              <span className="row-item__meta">
-                {c.username} · {c.email}
-              </span>
+              {/* Rows created before full_name became required can still be null. */}
+              <span className="row-item__name">{c.full_name || c.email}</span>
+              {c.full_name && <span className="row-item__meta">{c.email}</span>}
             </span>
 
             <span className="row-item__round">
@@ -84,7 +83,7 @@ export default function CandidateTable({
             </span>
 
             <RowMenu
-              label={`Actions for ${c.full_name || c.username}`}
+              label={`Actions for ${c.full_name || c.email}`}
               items={[
                 ...ROUNDS.map((r) => {
                   const scored = own.some((e) => e.round_key === r.key)

@@ -32,8 +32,8 @@ export async function buildRoundReport(args: {
 
   // --- Header ---------------------------------------------------------
   label(c, 'PRODUCT DESIGNER INTERVIEW')
-  heading(c, candidate.full_name || candidate.username, 22)
-  body(c, `${candidate.username}  ·  ${candidate.email}`, '#616161')
+  heading(c, candidate.full_name, 22)
+  body(c, candidate.email, '#616161')
   if (candidate.portfolio_url) body(c, candidate.portfolio_url, '#1863dc')
   c.y += 8
   rule(c)
@@ -97,7 +97,7 @@ export async function buildRoundReport(args: {
     doc.text(`${p} / ${pages}`, PAGE.w - M, PAGE.h - 28, { align: 'right' })
   }
 
-  const filename = `${slug(candidate.username)}-round-${round.number}-${round.key}.pdf`
+  const filename = `${slug(candidate.full_name)}-round-${round.number}-${round.key}.pdf`
   return { blob: doc.output('blob'), filename }
 }
 

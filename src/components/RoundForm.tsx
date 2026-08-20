@@ -4,7 +4,8 @@ import { RECOMMENDATIONS, SCORE_LABELS, type Round } from '../config/rounds'
 import type { BankQuestion, Evaluation, Recommendation } from '../lib/types'
 import type { EvaluationDraft } from '../lib/api'
 import { errorMessage } from '../lib/errors'
-import { averageScore, evaluationScore, roundedScore, scoredCount } from '../lib/score'
+import { averageScore, roundedScore, scoredCount } from '../lib/score'
+import { RECORDED_BY } from '../config/app'
 
 type Props = {
   round: Round
@@ -12,10 +13,6 @@ type Props = {
   questionBank: BankQuestion[]
   /** This interviewer's existing scorecard for this round, if they already submitted. */
   existing: Evaluation | null
-  /** Other panellists' scorecards for the same round, shown read-only. */
-  others: Evaluation[]
-  /** Self-declared name from the top bar. Required to submit. */
-  interviewerName: string
   /** True when the candidate has not reached this round yet. */
   locked: boolean
   onSubmit: (draft: EvaluationDraft) => Promise<void>
@@ -28,8 +25,6 @@ export default function RoundForm({
   candidateId,
   questionBank,
   existing,
-  others,
-  interviewerName,
   locked,
   onSubmit,
   onExportReport,
@@ -51,11 +46,10 @@ export default function RoundForm({
   const average = averageScore(criteria)
   const { scored, total, complete } = scoredCount(round, criteria)
 
-  const named = interviewerName.trim().length > 0
-  const canSubmit = named && complete && recommendation !== null && notes.trim().length > 0
+  const canSubmit = complete && recommendation !== null && notes.trim().length > 0
 
   // A report only makes sense once something has been submitted for this round.
-  const roundHasScorecard = !!existing || others.length > 0
+  const roundHasScorecard = !!existing
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -71,7 +65,7 @@ export default function RoundForm({
         questionsAsked: [],
         notes: notes.trim(),
         recommendation,
-        interviewerName,
+        interviewerName: RECORDED_BY,
       })
     } catch (err) {
       setError(errorMessage(err, 'Could not submit scorecard.'))
@@ -98,8 +92,8 @@ export default function RoundForm({
 
       {existing && (
         <div className="notice notice--info mt-16">
-          You submitted this round on {new Date(existing.submitted_at).toLocaleString()}. Saving
-          again updates your scorecard in place.
+          This round was scored on {new Date(existing.submitted_at).toLocaleString()}. Saving
+          again updates the scorecard in place.
         </div>
       )}
 
@@ -111,10 +105,6 @@ export default function RoundForm({
             <span className="caption">{bank.length} prompts · reference only</span>
           </summary>
           <div className="disclosure__body">
-            <p className="caption mb-16">
-              Prompts to draw on during the round. Nothing here is recorded — score the criteria
-              below and write what you observed in the notes.
-            </p>
             {round.criteria.map((c) => {
               const qs = bank.filter((q) => q.criterion === c.key)
               if (qs.length === 0) return null
@@ -129,6 +119,36 @@ export default function RoundForm({
                 </div>
               )
             })}
+          </div>
+        </details>
+      )}
+
+      {(round.signals || round.notEvaluated) && (
+        <details className="disclosure">
+          <summary className="disclosure__summary">
+            <span className="mono-label">What to look for</span>
+          </summary>
+          <div className="disclosure__body">
+            {round.signals && (
+              <div className="question-group">
+                <div className="question-group__label mono-label">Additional signals</div>
+                <ul className="suggested">
+                  {round.signals.map((sig) => (
+                    <li key={sig}>{sig}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {round.notEvaluated && (
+              <div className="question-group">
+                <div className="question-group__label mono-label">Do not weigh heavily</div>
+                <ul className="suggested">
+                  {round.notEvaluated.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </details>
       )}
@@ -181,11 +201,11 @@ export default function RoundForm({
                   ? 'Score the criteria above'
                   : (SCORE_LABELS[Math.round(average)] ?? '')}
               </div>
-              <div className="caption">
-                {complete
-                  ? `Mean of all ${total} criteria. Calculated, not entered.`
-                  : `${total - scored} criteri${total - scored === 1 ? 'on' : 'a'} left to score.`}
-              </div>
+              {!complete && (
+                <div className="caption">
+                  {total - scored} criteri{total - scored === 1 ? 'on' : 'a'} left to score.
+                </div>
+              )}
             </div>
           </div>
 
@@ -197,13 +217,10 @@ export default function RoundForm({
               id={`notes-${round.key}`}
               className="textarea"
               style={{ minHeight: 176 }}
-              placeholder="Evidence for the scores above: what they did well, where they fell short, and anything the next interviewer should probe."
+              placeholder="What you observed: strengths, gaps, and anything the next round should probe."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
-            <span className="field__hint">
-              Write for someone who was not in the room. Stick to observed behaviour.
-            </span>
           </div>
 
           <div className="field">
@@ -224,15 +241,6 @@ export default function RoundForm({
                 </button>
               ))}
             </div>
-            <span className="field__hint">
-              {recommendation === 'advance'
-                ? 'Submitting moves the candidate to the next round.'
-                : recommendation === 'reject'
-                  ? 'Submitting ends the process for this candidate.'
-                  : recommendation === 'hold'
-                    ? 'Submitting marks the candidate on hold for panel discussion.'
-                    : 'Advance moves them to the next round; Hold pauses; Do not proceed ends it.'}
-            </span>
           </div>
 
           {error && <div className="notice notice--error">{error}</div>}
@@ -248,40 +256,15 @@ export default function RoundForm({
             )}
             {!canSubmit && (
               <span className="caption">
-                {!named
-                  ? 'Add your name in the top bar first — scorecards must be attributable.'
-                  : !complete
-                    ? `Score all ${total} criteria — the overall score is calculated from them.`
-                    : 'Notes and a recommendation are required.'}
+                {!complete
+                  ? `Score all ${total} criteria — the overall score is calculated from them.`
+                  : 'Notes and a recommendation are required.'}
               </span>
             )}
           </div>
         </div>
       </section>
 
-      {/* ---------------------------------------------- other panellists */}
-      {others.length > 0 && (
-        <section className="block">
-          <div className="block__head">
-            <span className="mono-label">Other scorecards · this round</span>
-          </div>
-          <div className="stack gap-24">
-            {others.map((e) => (
-              <div key={e.id}>
-                <div className="row gap-12 wrap">
-                  <span className="heading-card">{e.interviewer_name}</span>
-                  <span className="chip chip--mono">{evaluationScore(e).toFixed(1)}/5</span>
-                  <span className="chip">{e.recommendation}</span>
-                  <span className="micro">{new Date(e.submitted_at).toLocaleDateString()}</span>
-                </div>
-                <p className="caption mt-8" style={{ whiteSpace: 'pre-wrap' }}>
-                  {e.notes}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </form>
   )
 }
